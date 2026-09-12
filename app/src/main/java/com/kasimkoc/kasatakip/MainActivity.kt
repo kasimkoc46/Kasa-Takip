@@ -25,14 +25,14 @@ class MainActivity : Activity() {
     private lateinit var toplamText: TextView
     private lateinit var tarihText: TextView
 
-    private lateinit var prefs: android.content.SharedPreferences
+    private val prefs by lazy {
+        getSharedPreferences("KasaTakip", MODE_PRIVATE)
+    }
 
     private val calendar = Calendar.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        prefs = getSharedPreferences("KasaTakip", MODE_PRIVATE)
 
         val layout = LinearLayout(this)
         layout.orientation = LinearLayout.VERTICAL
@@ -51,12 +51,12 @@ class MainActivity : Activity() {
         tarihText.setPadding(10, 20, 10, 20)
         layout.addView(tarihText)
 
-        val tarihButon = Button(this)
-        tarihButon.text = "📅 TARİH SEÇ"
-        tarihButon.setOnClickListener {
+        val tarihButton = Button(this)
+        tarihButton.text = "📅 TARİH SEÇ"
+        tarihButton.setOnClickListener {
             tarihSec()
         }
-        layout.addView(tarihButon)
+        layout.addView(tarihButton)
 
         val tarihNavi = LinearLayout(this)
         tarihNavi.orientation = LinearLayout.HORIZONTAL
@@ -99,6 +99,8 @@ class MainActivity : Activity() {
         nakitButton.setOnClickListener {
             paraGir("Elden Alınan") {
                 nakit += it
+                kaydet()
+                guncelle()
             }
         }
         layout.addView(nakitButton)
@@ -108,6 +110,8 @@ class MainActivity : Activity() {
         bankaButton.setOnClickListener {
             paraGir("Banka Havalesi") {
                 banka += it
+                kaydet()
+                guncelle()
             }
         }
         layout.addView(bankaButton)
@@ -117,6 +121,8 @@ class MainActivity : Activity() {
         giderButton.setOnClickListener {
             paraGir("Gider") {
                 gider += it
+                kaydet()
+                guncelle()
             }
         }
         layout.addView(giderButton)
@@ -126,6 +132,8 @@ class MainActivity : Activity() {
         baslangicButton.setOnClickListener {
             paraGir("Başlangıç Kasası") {
                 baslangicKasa = it
+                kaydet()
+                guncelle()
             }
         }
         layout.addView(baslangicButton)
@@ -144,49 +152,11 @@ class MainActivity : Activity() {
                     gider = 0.0
                     baslangicKasa = 0.0
 
-                    kaydet()
-                    guncelle()
-                }
-                .setNegativeButton("İptal", null)
-                .show()
-        }
-        layout.addView(sifirlaButton)
+                    prefs.edit()
+                        .remove(tarihAnahtari() + "_nakit")
+                        .remove(tarihAnahtari() + "_banka")
+                        .remove(tarihAnahtari() + "_gider")
+                        .remove(tarihAnahtari() + "_baslangic")
+                        .apply()
 
-        setContentView(layout)
-
-        yukle()
-    }
-    private fun tarihSec() {
-    DatePickerDialog(
-        this,
-        { _, year, month, dayOfMonth ->
-            kaydet()
-            calendar.set(year, month, dayOfMonth)
-            yukle()
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    ).show()
-    }
-
-    private fun tarihAnahtari(): String {
-        return SimpleDateFormat(
-            "yyyy-MM-dd",
-            Locale.getDefault()
-        ).format(calendar.time)
-    }
-
-    private fun tarihYazisi(): String {
-        return SimpleDateFormat(
-            "dd.MM.yyyy",
-            Locale.getDefault()
-        ).format(calendar.time)
-    }
-
-    private fun kaydet() {
-
-        val key = tarihAnahtari()
-
-        prefs.edit()
-           
+                    g
