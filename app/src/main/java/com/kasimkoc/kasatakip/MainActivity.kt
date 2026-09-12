@@ -413,8 +413,7 @@ class MainActivity : Activity() {
             "Borç / Veresiye: ${format(borc)} €"
 
         if (borcNot.isNotEmpty()) {
-            borcText.text += "\nNot: $borcNot"
-        }
+            borcText.text = borcText.text.toString() + "\nNot: " + borcNot
 
         toplamText.text =
             "Toplam Para: ${format(toplam)} €"
