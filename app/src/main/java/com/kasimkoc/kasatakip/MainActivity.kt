@@ -3,8 +3,8 @@ package com.kasimkoc.kasatakip
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
-import android.os.Bundle
 import android.graphics.Color
+import android.os.Bundle
 import android.view.Gravity
 import android.widget.*
 import java.text.SimpleDateFormat
@@ -20,13 +20,13 @@ class MainActivity : Activity() {
     private var borc = 0.0
     private var borcNot = ""
 
+    private lateinit var tarihText: TextView
     private lateinit var nakitText: TextView
     private lateinit var bankaText: TextView
     private lateinit var giderText: TextView
     private lateinit var kasaText: TextView
     private lateinit var borcText: TextView
     private lateinit var toplamText: TextView
-    private lateinit var tarihText: TextView
 
     private val prefs by lazy {
         getSharedPreferences("KasaTakip", MODE_PRIVATE)
@@ -39,19 +39,19 @@ class MainActivity : Activity() {
 
         val layout = LinearLayout(this)
         layout.orientation = LinearLayout.VERTICAL
-        layout.setPadding(30, 30, 30, 30)
+        layout.setPadding(25, 25, 25, 25)
 
         val baslik = TextView(this)
         baslik.text = "KASA TAKİP"
         baslik.textSize = 28f
-        baslik.setTextColor(Color.BLACK)
         baslik.gravity = Gravity.CENTER
+        baslik.setTextColor(Color.BLACK)
         layout.addView(baslik)
 
         tarihText = TextView(this)
         tarihText.textSize = 20f
         tarihText.gravity = Gravity.CENTER
-        tarihText.setPadding(10, 20, 10, 20)
+        tarihText.setPadding(10, 15, 10, 15)
         layout.addView(tarihText)
 
         val tarihButton = Button(this)
@@ -102,8 +102,8 @@ class MainActivity : Activity() {
         val nakitButton = Button(this)
         nakitButton.text = "+ ELDEN ALINAN"
         nakitButton.setOnClickListener {
-            paraGir("Elden Alınan") {
-                nakit += it
+            paraGir("Elden Alınan") { miktar ->
+                nakit += miktar
                 kaydet()
                 guncelle()
             }
@@ -113,8 +113,8 @@ class MainActivity : Activity() {
         val bankaButton = Button(this)
         bankaButton.text = "+ BANKA HAVALESİ"
         bankaButton.setOnClickListener {
-            paraGir("Banka Havalesi") {
-                banka += it
+            paraGir("Banka Havalesi") { miktar ->
+                banka += miktar
                 kaydet()
                 guncelle()
             }
@@ -124,24 +124,13 @@ class MainActivity : Activity() {
         val giderButton = Button(this)
         giderButton.text = "+ GİDER"
         giderButton.setOnClickListener {
-            paraGir("Gider") {
-                gider += it
+            paraGir("Gider") { miktar ->
+                gider += miktar
                 kaydet()
                 guncelle()
             }
         }
         layout.addView(giderButton)
-
-        val baslangicButton = Button(this)
-        baslangicButton.text = "BAŞLANGIÇ KASASI"
-        baslangicButton.setOnClickListener {
-            paraGir("Başlangıç Kasası") {
-                baslangicKasa = it
-                kaydet()
-                guncelle()
-            }
-        }
-        layout.addView(baslangicButton)
 
         val borcButton = Button(this)
         borcButton.text = "+ BORÇ / VERESİYE"
@@ -149,6 +138,17 @@ class MainActivity : Activity() {
             borcGir()
         }
         layout.addView(borcButton)
+
+        val baslangicButton = Button(this)
+        baslangicButton.text = "BAŞLANGIÇ KASASI"
+        baslangicButton.setOnClickListener {
+            paraGir("Başlangıç Kasası") { miktar ->
+                baslangicKasa = miktar
+                kaydet()
+                guncelle()
+            }
+        }
+        layout.addView(baslangicButton)
 
         val sifirlaButton = Button(this)
         sifirlaButton.text = "GÜNÜ SIFIRLA"
@@ -191,11 +191,14 @@ class MainActivity : Activity() {
     }
 
     private fun bilgi(metin: String): TextView {
+
         val text = TextView(this)
+
         text.text = metin
         text.textSize = 18f
         text.setTextColor(Color.BLACK)
-        text.setPadding(5, 10, 5, 10)
+        text.setPadding(5, 8, 5, 8)
+
         return text
     }
 
@@ -205,6 +208,7 @@ class MainActivity : Activity() {
     ) {
 
         val input = EditText(this)
+
         input.hint = "Tutar (€)"
 
         AlertDialog.Builder(this)
@@ -212,7 +216,8 @@ class MainActivity : Activity() {
             .setView(input)
             .setPositiveButton("Ekle") { _, _ ->
 
-                val miktar = input.text.toString()
+                val miktar = input.text
+                    .toString()
                     .replace(",", ".")
                     .toDoubleOrNull()
 
@@ -232,40 +237,33 @@ class MainActivity : Activity() {
 
     private fun borcGir() {
 
-        val borcLayout = LinearLayout(this)
-        borcLayout.orientation = LinearLayout.VERTICAL
+        val kutu = LinearLayout(this)
+        kutu.orientation = LinearLayout.VERTICAL
+        kutu.setPadding(30, 10, 30, 10)
 
-        val tutarInput = EditText(this)
-        tutarInput.hint = "Tutar (€)"
+        val miktarInput = EditText(this)
+        miktarInput.hint = "Tutar (€)"
 
         val notInput = EditText(this)
-        notInput.hint = "Kime / Not"
+        notInput.hint = "Müşteri / Borç notu"
 
-        borcLayout.addView(tutarInput)
-        borcLayout.addView(notInput)
+        kutu.addView(miktarInput)
+        kutu.addView(notInput)
 
         AlertDialog.Builder(this)
             .setTitle("Borç / Veresiye")
-            .setView(borcLayout)
-            .setPositiveButton("Kaydet") { _, _ ->
+            .setView(kutu)
+            .setPositiveButton("Ekle") { _, _ ->
 
-                val miktar = tutarInput.text.toString()
+                val miktar = miktarInput.text
+                    .toString()
                     .replace(",", ".")
                     .toDoubleOrNull()
-
-                val not = notInput.text.toString().trim()
 
                 if (miktar != null) {
 
                     borc += miktar
-
-                    if (not.isNotEmpty()) {
-                        if (borcNot.isNotEmpty()) {
-                            borcNot += "\n"
-                        }
-
-                        borcNot += not + " - " + format(miktar) + " €"
-                    }
+                    borcNot = notInput.text.toString()
 
                     kaydet()
                     guncelle()
@@ -306,6 +304,7 @@ class MainActivity : Activity() {
     }
 
     private fun tarihAnahtari(): String {
+
         return SimpleDateFormat(
             "yyyy-MM-dd",
             Locale.getDefault()
@@ -313,6 +312,7 @@ class MainActivity : Activity() {
     }
 
     private fun tarihYazisi(): String {
+
         return SimpleDateFormat(
             "dd.MM.yyyy",
             Locale.getDefault()
@@ -391,7 +391,6 @@ class MainActivity : Activity() {
     private fun guncelle() {
 
         val kasa = baslangicKasa + nakit - gider
-
         val toplam = nakit + banka + borc
 
         tarihText.text =
@@ -413,7 +412,12 @@ class MainActivity : Activity() {
             "Borç / Veresiye: ${format(borc)} €"
 
         if (borcNot.isNotEmpty()) {
-            borcText.text = borcText.text.toString() + "\nNot: " + borcNot
+
+            borcText.text =
+                borcText.text.toString() +
+                "\nNot: " +
+                borcNot
+        }
 
         toplamText.text =
             "Toplam Para: ${format(toplam)} €"
