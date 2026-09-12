@@ -2,11 +2,11 @@ package com.kasimkoc.kasatakip
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.graphics.Color
 import android.view.Gravity
 import android.widget.*
-import android.app.DatePickerDialog
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -17,11 +17,14 @@ class MainActivity : Activity() {
     private var banka = 0.0
     private var gider = 0.0
     private var baslangicKasa = 0.0
+    private var borc = 0.0
+    private var borcNot = ""
 
     private lateinit var nakitText: TextView
     private lateinit var bankaText: TextView
     private lateinit var giderText: TextView
     private lateinit var kasaText: TextView
+    private lateinit var borcText: TextView
     private lateinit var toplamText: TextView
     private lateinit var tarihText: TextView
 
@@ -52,7 +55,7 @@ class MainActivity : Activity() {
         layout.addView(tarihText)
 
         val tarihButton = Button(this)
-        tarihButton.text = "📅 TARİH SEÇ"
+        tarihButton.text = "TARİH SEÇ"
         tarihButton.setOnClickListener {
             tarihSec()
         }
@@ -63,7 +66,7 @@ class MainActivity : Activity() {
         tarihNavi.gravity = Gravity.CENTER
 
         val oncekiButton = Button(this)
-        oncekiButton.text = "◀️ ÖNCEKİ GÜN"
+        oncekiButton.text = "ÖNCEKİ GÜN"
         oncekiButton.setOnClickListener {
             kaydet()
             calendar.add(Calendar.DAY_OF_MONTH, -1)
@@ -71,7 +74,7 @@ class MainActivity : Activity() {
         }
 
         val sonrakiButton = Button(this)
-        sonrakiButton.text = "SONRAKİ GÜN ▶️"
+        sonrakiButton.text = "SONRAKİ GÜN"
         sonrakiButton.setOnClickListener {
             kaydet()
             calendar.add(Calendar.DAY_OF_MONTH, 1)
@@ -82,16 +85,18 @@ class MainActivity : Activity() {
         tarihNavi.addView(sonrakiButton)
         layout.addView(tarihNavi)
 
-        nakitText = bilgi("💵 Elden Alınan: 0,00 €")
-        bankaText = bilgi("🏦 Banka Havalesi: 0,00 €")
-        giderText = bilgi("💸 Giderler: 0,00 €")
-        kasaText = bilgi("💰 Kasada Olması Gereken: 0,00 €")
-        toplamText = bilgi("📊 Toplam Para: 0,00 €")
+        nakitText = bilgi("Elden Alınan: 0,00 €")
+        bankaText = bilgi("Banka Havalesi: 0,00 €")
+        giderText = bilgi("Giderler: 0,00 €")
+        kasaText = bilgi("Kasada Olması Gereken: 0,00 €")
+        borcText = bilgi("Borç / Veresiye: 0,00 €")
+        toplamText = bilgi("Toplam Para: 0,00 €")
 
         layout.addView(nakitText)
         layout.addView(bankaText)
         layout.addView(giderText)
         layout.addView(kasaText)
+        layout.addView(borcText)
         layout.addView(toplamText)
 
         val nakitButton = Button(this)
@@ -138,6 +143,13 @@ class MainActivity : Activity() {
         }
         layout.addView(baslangicButton)
 
+        val borcButton = Button(this)
+        borcButton.text = "+ BORÇ / VERESİYE"
+        borcButton.setOnClickListener {
+            borcGir()
+        }
+        layout.addView(borcButton)
+
         val sifirlaButton = Button(this)
         sifirlaButton.text = "GÜNÜ SIFIRLA"
         sifirlaButton.setOnClickListener {
@@ -151,15 +163,22 @@ class MainActivity : Activity() {
                     banka = 0.0
                     gider = 0.0
                     baslangicKasa = 0.0
+                    borc = 0.0
+                    borcNot = ""
+
+                    val key = tarihAnahtari()
 
                     prefs.edit()
-                        .remove(tarihAnahtari() + "_nakit")
-                        .remove(tarihAnahtari() + "_banka")
-                        .remove(tarihAnahtari() + "_gider")
-                        .remove(tarihAnahtari() + "_baslangic")
+                        .remove(key + "_nakit")
+                        .remove(key + "_banka")
+                        .remove(key + "_gider")
+                        .remove(key + "_baslangic")
+                        .remove(key + "_borc")
+                        .remove(key + "_borcNot")
                         .apply()
 
-                                   }
+                    guncelle()
+                }
                 .setNegativeButton("İptal", null)
                 .show()
         }
@@ -184,6 +203,7 @@ class MainActivity : Activity() {
         baslik: String,
         sonuc: (Double) -> Unit
     ) {
+
         val input = EditText(this)
         input.hint = "Tutar (€)"
 
@@ -210,7 +230,61 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun borcGir() {
+
+        val borcLayout = LinearLayout(this)
+        borcLayout.orientation = LinearLayout.VERTICAL
+
+        val tutarInput = EditText(this)
+        tutarInput.hint = "Tutar (€)"
+
+        val notInput = EditText(this)
+        notInput.hint = "Kime / Not"
+
+        borcLayout.addView(tutarInput)
+        borcLayout.addView(notInput)
+
+        AlertDialog.Builder(this)
+            .setTitle("Borç / Veresiye")
+            .setView(borcLayout)
+            .setPositiveButton("Kaydet") { _, _ ->
+
+                val miktar = tutarInput.text.toString()
+                    .replace(",", ".")
+                    .toDoubleOrNull()
+
+                val not = notInput.text.toString().trim()
+
+                if (miktar != null) {
+
+                    borc += miktar
+
+                    if (not.isNotEmpty()) {
+                        if (borcNot.isNotEmpty()) {
+                            borcNot += "\n"
+                        }
+
+                        borcNot += not + " - " + format(miktar) + " €"
+                    }
+
+                    kaydet()
+                    guncelle()
+
+                } else {
+
+                    Toast.makeText(
+                        this,
+                        "Geçerli bir tutar girin",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            .setNegativeButton("İptal", null)
+            .show()
+    }
+
     private fun tarihSec() {
+
         DatePickerDialog(
             this,
             { _, year, month, day ->
@@ -246,6 +320,7 @@ class MainActivity : Activity() {
     }
 
     private fun kaydet() {
+
         val key = tarihAnahtari()
 
         prefs.edit()
@@ -265,10 +340,19 @@ class MainActivity : Activity() {
                 key + "_baslangic",
                 baslangicKasa.toFloat()
             )
+            .putFloat(
+                key + "_borc",
+                borc.toFloat()
+            )
+            .putString(
+                key + "_borcNot",
+                borcNot
+            )
             .apply()
     }
 
     private fun yukle() {
+
         val key = tarihAnahtari()
 
         nakit = prefs.getFloat(
@@ -291,13 +375,24 @@ class MainActivity : Activity() {
             0f
         ).toDouble()
 
+        borc = prefs.getFloat(
+            key + "_borc",
+            0f
+        ).toDouble()
+
+        borcNot = prefs.getString(
+            key + "_borcNot",
+            ""
+        ) ?: ""
+
         guncelle()
     }
 
     private fun guncelle() {
 
         val kasa = baslangicKasa + nakit - gider
-        val toplam = nakit + banka
+
+        val toplam = nakit + banka + borc
 
         tarihText.text =
             "Tarih: ${tarihYazisi()}"
@@ -314,15 +409,23 @@ class MainActivity : Activity() {
         kasaText.text =
             "Kasada Olması Gereken: ${format(kasa)} €"
 
+        borcText.text =
+            "Borç / Veresiye: ${format(borc)} €"
+
+        if (borcNot.isNotEmpty()) {
+            borcText.text += "\nNot: $borcNot"
+        }
+
         toplamText.text =
             "Toplam Para: ${format(toplam)} €"
     }
 
     private fun format(tutar: Double): String {
+
         return String.format(
             Locale.GERMANY,
             "%.2f",
             tutar
         )
     }
-} 
+}
